@@ -2,7 +2,7 @@
 
 import React, { useRef, useState, useEffect } from 'react';
 import { motion, useScroll, useTransform, useSpring, useMotionValue, AnimatePresence } from 'motion/react';
-import { Mail, ExternalLink, Code2, Database, Layout, Wrench, ArrowUpRight, Sparkles, Move, Hospital, ShoppingBag, Coffee, CheckCircle, AlertCircle, Loader2, FileText, Menu, X, Globe, Eye } from 'lucide-react';
+import { Mail, ExternalLink, Code2, Database, Layout, Wrench, ArrowUpRight, Sparkles, Move, Hospital, ShoppingBag, Coffee, CheckCircle, AlertCircle, Loader2, FileText, Menu, X, Globe, Eye, Award, Cpu, Smartphone, ChevronLeft, ChevronRight, Check } from 'lucide-react';
 
 // PASTE YOUR WEB3FORMS ACCESS KEY HERE
 const WEB3FORMS_ACCESS_KEY = process.env.NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY;
@@ -24,8 +24,8 @@ function TiltCard({ children, className }) {
   const x = useMotionValue(0);
   const y = useMotionValue(0);
 
-  const rotateX = useSpring(useTransform(y, [-0.5, 0.5], [5, -5]), { stiffness: 200, damping: 20 });
-  const rotateY = useSpring(useTransform(x, [-0.5, 0.5], [-5, 5]), { stiffness: 200, damping: 20 });
+  const rotateX = useSpring(useTransform(y, [-0.5, 0.5], [6, -6]), { stiffness: 200, damping: 20 });
+  const rotateY = useSpring(useTransform(x, [-0.5, 0.5], [-6, 6]), { stiffness: 200, damping: 20 });
 
   const handleMouseMove = (e) => {
     if (!cardRef.current) return;
@@ -61,6 +61,11 @@ export default function Home() {
   const dragAreaRef = useRef(null);
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Certificate Slideshow State
+  const [certIndex, setCertIndex] = useState(0);
+  const [direction, setDirection] = useState(1);
+  const [imgError, setImgError] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState({ name: '', email: '', message: '' });
@@ -160,6 +165,120 @@ export default function Home() {
     }
   ];
 
+  // Certificates list matching your public/certificates/ files exactly
+  const certificates = [
+    {
+      title: "Introduction to Generative AI",
+      issuer: "Simplilearn & Google Cloud",
+      date: "June 2025",
+      badge: "AI & GenAI",
+      icon: <Cpu className="w-6 h-6 text-teal-600" />,
+      img: "/certificates/generative-ai.jpg"
+    },
+    {
+      title: "Prompt Engineering",
+      issuer: "Infosys Springboard",
+      date: "May 2025",
+      badge: "AI Engineering",
+      icon: <Sparkles className="w-6 h-6 text-teal-600" />,
+      img: "/certificates/prompt-engineering.jpg"
+    },
+    {
+      title: "Mobile App Development",
+      issuer: "Datanerdz.AI & MSME",
+      date: "October 2024",
+      badge: "Mobile Dev",
+      icon: <Smartphone className="w-6 h-6 text-teal-600" />,
+      img: "/certificates/mobile-app.jpg"
+    },
+    {
+      title: "HTML5 - The Language",
+      issuer: "Infosys Springboard",
+      date: "March 2025",
+      badge: "Web Tech",
+      icon: <Layout className="w-6 h-6 text-teal-600" />,
+      img: "/certificates/html.jpg"
+    },
+    {
+      title: "CSS3",
+      issuer: "Infosys Springboard",
+      date: "March 2025",
+      badge: "Web Styling",
+      icon: <Code2 className="w-6 h-6 text-teal-600" />,
+      img: "/certificates/css.jpg"
+    },
+    {
+      title: "JavaScript",
+      issuer: "Infosys Springboard",
+      date: "April 2025",
+      badge: "Core JS",
+      icon: <Code2 className="w-6 h-6 text-teal-600" />,
+      img: "/certificates/javascript.jpg"
+    },
+    {
+      title: "Basics of Python",
+      issuer: "Infosys Springboard",
+      date: "May 2024",
+      badge: "Python",
+      icon: <Wrench className="w-6 h-6 text-teal-600" />,
+      img: "/certificates/python.jpg"
+    },
+    {
+      title: "Database Management System Part - 1",
+      issuer: "Infosys Springboard",
+      date: "May 2024",
+      badge: "DBMS & SQL",
+      icon: <Database className="w-6 h-6 text-teal-600" />,
+      img: "/certificates/dbms.jpg"
+    }
+  ];
+
+  // Reset image error state and safeguard index
+  useEffect(() => {
+    setImgError(false);
+    if (certIndex >= certificates.length) {
+      setCertIndex(0);
+    }
+  }, [certIndex, certificates.length]);
+
+  // Auto-play slideshow timer for certificates
+  useEffect(() => {
+    const timer = setInterval(() => {
+      nextCert();
+    }, 4500);
+    return () => clearInterval(timer);
+  }, [certIndex, certificates.length]);
+
+  const nextCert = () => {
+    setDirection(1);
+    setCertIndex((prev) => (prev + 1) % certificates.length);
+  };
+
+  const prevCert = () => {
+    setDirection(-1);
+    setCertIndex((prev) => (prev - 1 + certificates.length) % certificates.length);
+  };
+
+  const slideVariants = {
+    initial: (direction) => ({
+      x: direction > 0 ? 80 : -80,
+      opacity: 0,
+      scale: 0.96
+    }),
+    animate: {
+      x: 0,
+      opacity: 1,
+      scale: 1,
+      transition: { duration: 0.45, ease: "easeOut" }
+    },
+    exit: (direction) => ({
+      x: direction < 0 ? 80 : -80,
+      opacity: 0,
+      scale: 0.96,
+      transition: { duration: 0.45, ease: "easeIn" }
+    })
+  };
+
   const categories = ["All", "Full-Stack", "Healthcare / Enterprise"];
 
   const filteredProjects = selectedCategory === "All" 
@@ -178,6 +297,8 @@ export default function Home() {
     { label: "Tailwind CSS", color: "bg-cyan-100 text-cyan-800 border-cyan-300" },
     { label: "Socket.io", color: "bg-indigo-100 text-indigo-800 border-indigo-300" }
   ];
+
+  const currentCert = certificates[certIndex] || certificates[0];
 
   return (
     <div ref={containerRef} className="bg-slate-50 text-slate-800 min-h-screen font-sans selection:bg-teal-500/20 selection:text-teal-900 relative overflow-x-hidden">
@@ -215,6 +336,7 @@ export default function Home() {
             <a href="#about" className="hover:text-teal-600 transition-colors">About</a>
             <a href="#offerings" className="hover:text-teal-600 transition-colors">Offerings</a>
             <a href="#work" className="hover:text-teal-600 transition-colors">Work</a>
+            <a href="#certificates" className="hover:text-teal-600 transition-colors">Certifications</a>
             <a href="#techstack" className="hover:text-teal-600 transition-colors">Techstack</a>
             <a href="#contact" className="hover:text-teal-600 transition-colors">Contact</a>
           </div>
@@ -241,6 +363,7 @@ export default function Home() {
               <a href="#about" onClick={() => setMobileMenuOpen(false)} className="py-1 hover:text-teal-600 transition-colors">About</a>
               <a href="#offerings" onClick={() => setMobileMenuOpen(false)} className="py-1 hover:text-teal-600 transition-colors">Offerings</a>
               <a href="#work" onClick={() => setMobileMenuOpen(false)} className="py-1 hover:text-teal-600 transition-colors">Work</a>
+              <a href="#certificates" onClick={() => setMobileMenuOpen(false)} className="py-1 hover:text-teal-600 transition-colors">Certifications</a>
               <a href="#techstack" onClick={() => setMobileMenuOpen(false)} className="py-1 hover:text-teal-600 transition-colors">Techstack</a>
               <a href="#contact" onClick={() => setMobileMenuOpen(false)} className="py-1 hover:text-teal-600 transition-colors">Contact</a>
             </motion.div>
@@ -259,7 +382,7 @@ export default function Home() {
               className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-[11px] sm:text-xs font-mono font-semibold text-teal-800 bg-teal-50 border border-teal-200 shadow-sm w-fit"
             >
               <Sparkles className="w-3.5 h-3.5 text-teal-600 flex-shrink-0" />
-              Available for Software Engineering Roles
+              Available for Web Development Roles
             </motion.div>
 
             <motion.h1 
@@ -270,7 +393,7 @@ export default function Home() {
             >
               Hi, I'm Easwar R <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-700 via-teal-600 to-emerald-600">
-                Software Developer
+                Web Developer
               </span>
             </motion.h1>
 
@@ -298,14 +421,16 @@ export default function Home() {
                 View Selected Work <ArrowUpRight className="w-4 h-4" />
               </motion.a>
 
+              {/* VIEW RESUME ONLINE BUTTON */}
               <motion.a 
                 whileHover={{ scale: 1.03, y: -2 }}
                 whileTap={{ scale: 0.97 }}
                 href="/resume.pdf" 
-                download="Easwar_R_Resume.pdf"
+                target="_blank"
+                rel="noreferrer"
                 className="bg-teal-50 text-teal-800 font-semibold px-6 py-3.5 rounded-xl border border-teal-200 shadow-sm flex items-center justify-center gap-2 text-sm hover:bg-teal-100 transition-colors"
               >
-                <FileText className="w-4 h-4 text-teal-600" /> Download Resume
+                <FileText className="w-4 h-4 text-teal-600" /> View Resume
               </motion.a>
 
               <motion.a 
@@ -381,7 +506,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* WORK SECTION: Agency-Grade Project Mockup Showcase */}
+        {/* WORK SECTION */}
         <section id="work" className="space-y-6 sm:space-y-8 pt-8 border-t border-slate-200">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
             <div className="space-y-1">
@@ -406,7 +531,7 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Modern Card Showcase Grid */}
+          {/* 3-Column Card Grid */}
           <motion.div layout className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             <AnimatePresence>
               {filteredProjects.map((proj) => (
@@ -437,7 +562,7 @@ export default function Home() {
                         <span className="w-3" />
                       </div>
 
-                      {/* Live Viewport Area with Scale & Hover Blur Overlay */}
+                      {/* Live Viewport Area */}
                       <div className="relative w-full flex-1 bg-white overflow-hidden">
                         <iframe 
                           src={proj.live} 
@@ -446,12 +571,17 @@ export default function Home() {
                           loading="lazy"
                         />
                         
-                        {/* Hover Overlay Button */}
-                        <div className="absolute inset-0 bg-slate-950/40 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center pointer-events-none">
-                          <span className="px-4 py-2 rounded-full bg-white/90 text-slate-900 text-xs font-mono font-semibold shadow-lg flex items-center gap-1.5 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
-                            <Eye className="w-3.5 h-3.5 text-teal-600" /> Interactive Preview
+                        {/* Interactive Overlay Button Linked Directly to Project URL */}
+                        <a 
+                          href={proj.live} 
+                          target="_blank" 
+                          rel="noreferrer" 
+                          className="absolute inset-0 bg-slate-950/40 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center pointer-events-auto z-20 cursor-pointer"
+                        >
+                          <span className="px-4 py-2 rounded-full bg-white/95 text-slate-900 text-xs font-mono font-semibold shadow-lg flex items-center gap-1.5 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300 border border-slate-200 hover:bg-teal-600 hover:text-white">
+                            <Eye className="w-3.5 h-3.5 text-teal-600 group-hover:text-white" /> Interactive Preview
                           </span>
-                        </div>
+                        </a>
                       </div>
                     </div>
 
@@ -500,6 +630,146 @@ export default function Home() {
           </motion.div>
         </section>
 
+        {/* CERTIFICATIONS SECTION: Slideshow with Document Preview & Defensive Fallback */}
+        <section id="certificates" className="space-y-6 sm:space-y-8 pt-8 border-t border-slate-200">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+            <div className="space-y-1">
+              <span className="text-xs font-mono font-semibold text-teal-600 uppercase tracking-widest">Verified Credentials</span>
+              <h2 className="text-2xl sm:text-4xl md:text-5xl font-black tracking-tight text-slate-900">Certifications</h2>
+            </div>
+
+            {/* Manual Controls */}
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-mono text-slate-500">
+                {certIndex + 1} / {certificates.length}
+              </span>
+              <div className="flex gap-1.5">
+                <button 
+                  onClick={prevCert}
+                  className="p-2.5 rounded-xl bg-white border border-slate-200 hover:border-teal-500 text-slate-700 shadow-sm transition-all active:scale-95"
+                  aria-label="Previous certificate"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <button 
+                  onClick={nextCert}
+                  className="p-2.5 rounded-xl bg-white border border-slate-200 hover:border-teal-500 text-slate-700 shadow-sm transition-all active:scale-95"
+                  aria-label="Next certificate"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Smooth Motion Slideshow Container displaying Certificate Image Viewport */}
+          <div className="relative max-w-4xl mx-auto min-h-[320px] flex items-center justify-center">
+            <AnimatePresence custom={direction} mode="wait">
+              <motion.div
+                key={certIndex}
+                custom={direction}
+                variants={slideVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                className="w-full"
+              >
+                <TiltCard className="p-6 sm:p-8 bg-white rounded-3xl border border-slate-200/90 shadow-lg hover:border-teal-300 transition-all flex flex-col md:flex-row justify-between items-stretch gap-6 relative overflow-hidden group">
+                  
+                  {/* Left Side: Certificate Text Details */}
+                  <div className="space-y-4 max-w-md flex flex-col justify-between z-10">
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2.5">
+                        <div className="p-2.5 rounded-2xl bg-teal-50 border border-teal-100 text-teal-600">
+                          {currentCert?.icon}
+                        </div>
+                        <span className="px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-mono font-semibold border border-slate-200">
+                          {currentCert?.badge}
+                        </span>
+                      </div>
+
+                      <div>
+                        <h3 className="text-xl sm:text-2xl font-black text-slate-900 group-hover:text-teal-600 transition-colors leading-tight">
+                          {currentCert?.title}
+                        </h3>
+                        <p className="text-xs sm:text-sm font-semibold text-slate-600 mt-2 flex items-center gap-2">
+                          <Award className="w-4 h-4 text-teal-600 flex-shrink-0" />
+                          {currentCert?.issuer}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="pt-2 text-xs font-mono text-slate-400">
+                      Issued Date: {currentCert?.date}
+                    </div>
+                  </div>
+
+                  {/* Right Side: High-Resolution Certificate Document Image Viewport with Fallback UI */}
+                  <div className="w-full md:w-[380px] aspect-[1.41/1] bg-slate-100 rounded-2xl border-2 border-slate-200 overflow-hidden shadow-inner relative group-hover:border-teal-300 transition-colors flex items-center justify-center">
+                    {!imgError && currentCert?.img ? (
+                      <>
+                        <img 
+                          src={currentCert.img} 
+                          alt={`${currentCert.title} Certificate Preview`}
+                          onError={() => setImgError(true)}
+                          className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
+                        />
+
+                        {/* Open Certificate Image Action Overlay */}
+                        <a 
+                          href={currentCert.img} 
+                          target="_blank" 
+                          rel="noreferrer" 
+                          className="absolute inset-0 bg-slate-950/20 backdrop-blur-[1px] opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
+                        >
+                          <span className="px-3.5 py-2 rounded-full bg-white/95 text-slate-900 text-xs font-mono font-semibold shadow-md flex items-center gap-1.5 border border-slate-200 hover:bg-teal-600 hover:text-white transition-colors">
+                            <FileText className="w-3.5 h-3.5 text-teal-600 group-hover:text-white" /> View Full Certificate
+                          </span>
+                        </a>
+                      </>
+                    ) : (
+                      /* Clean Fallback Document Card if image file hasn't finished loading */
+                      <div className="w-full h-full bg-gradient-to-br from-slate-50 via-teal-50/30 to-white p-5 flex flex-col justify-between text-center relative">
+                        <div className="flex justify-between items-center border-b border-slate-200 pb-2">
+                          <span className="text-[10px] font-mono font-bold text-slate-700 uppercase">{currentCert?.issuer}</span>
+                          <span className="text-[9px] font-mono text-teal-700 bg-teal-100 px-2 py-0.5 rounded-full font-semibold">Verified</span>
+                        </div>
+                        <div className="space-y-1 my-auto">
+                          <p className="text-[9px] font-mono text-slate-400 uppercase">COURSE COMPLETION</p>
+                          <p className="text-sm font-bold text-slate-900">{currentCert?.title}</p>
+                          <p className="text-xs text-teal-700 font-serif italic">Awarded to Easwar R</p>
+                        </div>
+                        <div className="flex justify-between items-end border-t border-slate-200 pt-2">
+                          <span className="text-[9px] font-mono text-slate-500">{currentCert?.date}</span>
+                          <Award className="w-5 h-5 text-teal-600" />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                </TiltCard>
+              </motion.div>
+            </AnimatePresence>
+          </div>
+
+          {/* Indicator Navigation Dots */}
+          <div className="flex justify-center items-center gap-2 pt-2">
+            {certificates.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={() => {
+                  setDirection(idx > certIndex ? 1 : -1);
+                  setCertIndex(idx);
+                }}
+                className={`h-2 rounded-full transition-all duration-300 ${
+                  certIndex === idx ? 'bg-teal-600 w-8' : 'bg-slate-300 w-2 hover:bg-teal-400'
+                }`}
+                aria-label={`Go to slide ${idx + 1}`}
+              />
+            ))}
+          </div>
+        </section>
+
         {/* DRAGGABLE TECH STACK SECTION */}
         <section id="techstack" className="space-y-6 pt-8 border-t border-slate-200 text-center">
           <div className="max-w-xl mx-auto space-y-2">
@@ -542,7 +812,7 @@ export default function Home() {
             <div className="text-center space-y-2">
               <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900">Let's Connect!</h2>
               <p className="text-slate-600 text-xs sm:text-sm">
-                Open to Software Engineering opportunities, full-stack projects, and technical roles.
+                Open to Web Development opportunities, full-stack projects, and technical roles.
               </p>
             </div>
 
