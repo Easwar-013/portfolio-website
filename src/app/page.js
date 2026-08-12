@@ -5,7 +5,7 @@ import { motion, useScroll, useTransform, useSpring, useMotionValue, AnimatePres
 import { Mail, ExternalLink, Code2, Database, Layout, Wrench, ArrowUpRight, Sparkles, Move, Hospital, ShoppingBag, Coffee, CheckCircle, AlertCircle, Loader2, FileText, Menu, X, Globe, Eye } from 'lucide-react';
 
 // PASTE YOUR WEB3FORMS ACCESS KEY HERE
-const WEB3FORMS_ACCESS_KEY = "";
+const WEB3FORMS_ACCESS_KEY = process.env.NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY;
 
 const GithubIcon = ({ className = "w-5 h-5" }) => (
   <svg className={className} fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
