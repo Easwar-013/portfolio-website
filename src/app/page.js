@@ -846,7 +846,7 @@ export default function Home() {
 
         {/* DRAGGABLE TECH STACK SECTION */}
         <section id="techstack" className="scroll-mt-24 space-y-5 sm:space-y-6 pt-6 sm:pt-8 border-t border-slate-200 text-center">
-          <div className="max-w-xl mx-auto space-y-1.5">
+          <div className="max-w-xl mx-auto space-y-1.5 px-4">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-200/60 text-slate-700 text-[10px] sm:text-[11px] font-mono font-semibold">
               <Move className="w-3.5 h-3.5 text-teal-600" /> Interactive Physics Box — Try dragging badges!
             </div>
@@ -855,7 +855,7 @@ export default function Home() {
 
           <div 
             ref={dragAreaRef}
-            className="p-4 sm:p-12 bg-white rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden min-h-[180px] sm:min-h-[220px] flex flex-wrap justify-center items-center gap-2 sm:gap-3"
+            className="p-5 sm:p-12 bg-white rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden min-h-[220px] sm:min-h-[240px] grid grid-cols-2 sm:flex sm:flex-wrap justify-center items-center gap-2.5 sm:gap-3 max-w-2xl mx-auto"
           >
             {techPills.map((pill, idx) => (
               <motion.div
@@ -864,9 +864,9 @@ export default function Home() {
                 dragConstraints={dragAreaRef}
                 dragElastic={0.2}
                 dragTransition={{ bounceStiffness: 300, bounceDamping: 10 }}
-                whileHover={{ scale: 1.1 }}
+                whileHover={{ scale: 1.08 }}
                 whileTap={{ scale: 0.95 }}
-                className={`px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl border text-xs sm:text-sm font-mono font-semibold shadow-sm cursor-grab active:cursor-grabbing select-none ${pill.color}`}
+                className={`w-full sm:w-auto px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl border text-center text-xs sm:text-sm font-mono font-semibold shadow-sm cursor-grab active:cursor-grabbing select-none flex items-center justify-center ${pill.color}`}
               >
                 {pill.label}
               </motion.div>
