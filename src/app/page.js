@@ -27,7 +27,7 @@ function TiltCard({ children, className }) {
   const rotateY = useSpring(useTransform(x, [-0.5, 0.5], [-5, 5]), { stiffness: 200, damping: 20 });
 
   const handleMouseMove = (e) => {
-    if (!cardRef.current || window.innerWidth < 768) return;
+    if (!cardRef.current || (typeof window !== 'undefined' && window.innerWidth < 768)) return;
     const rect = cardRef.current.getBoundingClientRect();
     const width = rect.width;
     const height = rect.height;
@@ -100,7 +100,7 @@ export default function Home() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Smooth Scroll navigation helper for mobile & desktop
+  // Smooth scroll handler ensuring mobile menu state closes without canceling scroll
   const handleNavClick = (e, targetId) => {
     e.preventDefault();
     setMobileMenuOpen(false);
@@ -110,7 +110,7 @@ export default function Home() {
       if (targetElement) {
         targetElement.scrollIntoView({ behavior: 'smooth' });
       }
-    }, 50);
+    }, 100);
   };
 
   // Prevent background scroll and listen for ESC key
@@ -243,7 +243,7 @@ export default function Home() {
       issuer: "Simplilearn & Google Cloud",
       date: "June 2025",
       badge: "AI & GenAI",
-      icon: <Cpu className="w-5 h-5 text-teal-600" />,
+      icon: <Cpu className="w-6 h-6 text-teal-600" />,
       img: "/certificates/generative-ai.jpg"
     },
     {
@@ -251,7 +251,7 @@ export default function Home() {
       issuer: "Infosys Springboard",
       date: "May 2025",
       badge: "AI Engineering",
-      icon: <Sparkles className="w-5 h-5 text-teal-600" />,
+      icon: <Sparkles className="w-6 h-6 text-teal-600" />,
       img: "/certificates/prompt-engineering.jpg"
     },
     {
@@ -259,7 +259,7 @@ export default function Home() {
       issuer: "Datanerdz.AI & MSME",
       date: "October 2024",
       badge: "Mobile Dev",
-      icon: <Smartphone className="w-5 h-5 text-teal-600" />,
+      icon: <Smartphone className="w-6 h-6 text-teal-600" />,
       img: "/certificates/mobile-app.jpg"
     },
     {
@@ -267,7 +267,7 @@ export default function Home() {
       issuer: "Infosys Springboard",
       date: "March 2025",
       badge: "Web Tech",
-      icon: <Layout className="w-5 h-5 text-teal-600" />,
+      icon: <Layout className="w-6 h-6 text-teal-600" />,
       img: "/certificates/html.jpg"
     },
     {
@@ -275,7 +275,7 @@ export default function Home() {
       issuer: "Infosys Springboard",
       date: "March 2025",
       badge: "Web Styling",
-      icon: <Code2 className="w-5 h-5 text-teal-600" />,
+      icon: <Code2 className="w-6 h-6 text-teal-600" />,
       img: "/certificates/css.jpg"
     },
     {
@@ -283,7 +283,7 @@ export default function Home() {
       issuer: "Infosys Springboard",
       date: "April 2025",
       badge: "Core JS",
-      icon: <Code2 className="w-5 h-5 text-teal-600" />,
+      icon: <Code2 className="w-6 h-6 text-teal-600" />,
       img: "/certificates/javascript.jpg"
     },
     {
@@ -291,7 +291,7 @@ export default function Home() {
       issuer: "Infosys Springboard",
       date: "May 2024",
       badge: "Python",
-      icon: <Wrench className="w-5 h-5 text-teal-600" />,
+      icon: <Wrench className="w-6 h-6 text-teal-600" />,
       img: "/certificates/python.jpg"
     },
     {
@@ -299,7 +299,7 @@ export default function Home() {
       issuer: "Infosys Springboard",
       date: "May 2024",
       badge: "DBMS & SQL",
-      icon: <Database className="w-5 h-5 text-teal-600" />,
+      icon: <Database className="w-6 h-6 text-teal-600" />,
       img: "/certificates/dbms.jpg"
     }
   ];
@@ -366,7 +366,7 @@ export default function Home() {
   return (
     <div ref={containerRef} className="bg-slate-50 text-slate-800 min-h-screen font-sans selection:bg-teal-500/20 selection:text-teal-900 relative overflow-x-hidden">
       
-      {/* Liquid Mouse Glow Follower (Hidden on mobile for performance) */}
+      {/* Liquid Mouse Glow Follower (Desktop only) */}
       <motion.div
         style={{ x: smoothMouseX, y: smoothMouseY }}
         className="fixed top-0 left-0 w-52 h-52 bg-gradient-to-tr from-teal-300/30 via-emerald-200/20 to-cyan-300/30 rounded-full blur-3xl pointer-events-none z-30 hidden md:block"
@@ -379,7 +379,7 @@ export default function Home() {
         className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[1100px] h-[350px] sm:h-[500px] bg-gradient-to-b from-teal-100/80 via-emerald-50/50 to-transparent blur-3xl pointer-events-none" 
       />
 
-      {/* Floating Glass Navigation Header */}
+      {/* Floating Glass Navigation Header with Active Pill Indicator */}
       <motion.nav 
         initial={{ y: -50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -432,7 +432,7 @@ export default function Home() {
           </button>
         </div>
 
-        {/* Mobile Navigation Dropdown */}
+        {/* Mobile Navigation Dropdown Menu */}
         <AnimatePresence>
           {mobileMenuOpen && (
             <motion.div 
@@ -802,7 +802,7 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* Right Side: Clickable Certificate Image Frame */}
+                  {/* Right Side: Clickable Certificate Image Viewport */}
                   <div 
                     onClick={() => setLightboxCert(currentCert)}
                     className="w-full md:w-[380px] aspect-[1.41/1] bg-slate-100 rounded-2xl border border-slate-200 overflow-hidden shadow-inner relative group-hover:border-teal-300 transition-colors flex items-center justify-center cursor-pointer"
@@ -843,59 +843,6 @@ export default function Home() {
             ))}
           </div>
         </section>
-
-        {/* WHITE FROSTED GLASS LIGHTBOX MODAL */}
-        <AnimatePresence>
-          {lightboxCert && (
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setLightboxCert(null)}
-              className="fixed inset-0 bg-slate-900/40 backdrop-blur-2xl z-[9999] flex items-center justify-center p-4 sm:p-6 md:p-8 cursor-zoom-out"
-            >
-              <motion.div 
-                initial={{ scale: 0.92, opacity: 0, y: 15 }}
-                animate={{ scale: 1, opacity: 1, y: 0 }}
-                exit={{ scale: 0.92, opacity: 0, y: 15 }}
-                transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                onClick={(e) => e.stopPropagation()}
-                className="relative max-w-4xl w-full flex flex-col items-center gap-3 cursor-default"
-              >
-                {/* Frosted Glass Header Pill */}
-                <div className="w-full flex justify-between items-center px-4 py-2.5 rounded-2xl bg-white/85 backdrop-blur-xl border border-white/60 shadow-xl text-slate-800">
-                  <div className="flex items-center gap-2.5 truncate">
-                    <span className="px-2.5 py-0.5 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-[10px] font-mono font-semibold">
-                      {lightboxCert.badge}
-                    </span>
-                    <span className="text-sm font-bold truncate text-slate-900">{lightboxCert.title}</span>
-                    <span className="text-xs text-slate-500 hidden sm:inline">• {lightboxCert.issuer}</span>
-                  </div>
-
-                  {/* Close Button */}
-                  <motion.button 
-                    whileHover={{ scale: 1.1, rotate: 90 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => setLightboxCert(null)}
-                    className="p-1.5 rounded-full bg-slate-100/80 hover:bg-teal-600 hover:text-white text-slate-600 transition-colors shadow-sm flex items-center justify-center flex-shrink-0 ml-2"
-                    aria-label="Close certificate preview"
-                  >
-                    <X className="w-4 h-4" />
-                  </motion.button>
-                </div>
-
-                {/* Clean Certificate Image Viewport */}
-                <div className="relative w-full rounded-2xl overflow-hidden bg-transparent shadow-2xl flex items-center justify-center">
-                  <img 
-                    src={lightboxCert.img} 
-                    alt={`${lightboxCert.title} Certificate`} 
-                    className="w-auto max-h-[80vh] object-contain rounded-2xl shadow-2xl" 
-                  />
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
 
         {/* DRAGGABLE TECH STACK SECTION */}
         <section id="techstack" className="scroll-mt-24 space-y-5 sm:space-y-6 pt-6 sm:pt-8 border-t border-slate-200 text-center">
@@ -1046,7 +993,6 @@ export default function Home() {
                       >
                         <Check className="w-3 h-3 text-teal-600" />
                         <span className="text-[11px] font-mono font-bold tracking-tight">Copied!</span>
-                        {/* Downward Caret Arrow */}
                         <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-white rotate-45 border-r border-b border-teal-200" />
                       </motion.div>
                     )}
@@ -1072,6 +1018,59 @@ export default function Home() {
         </footer>
 
       </main>
+
+      {/* FULLSCREEN ISOLATED LIGHTBOX MODAL */}
+      <AnimatePresence>
+        {lightboxCert && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setLightboxCert(null)}
+            className="fixed inset-0 bg-slate-950/70 backdrop-blur-xl z-[99999] flex items-center justify-center p-3 sm:p-6 md:p-8 cursor-zoom-out"
+          >
+            <motion.div 
+              initial={{ scale: 0.94, opacity: 0, y: 15 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.94, opacity: 0, y: 15 }}
+              transition={{ type: "spring", stiffness: 300, damping: 25 }}
+              onClick={(e) => e.stopPropagation()}
+              className="relative max-w-4xl w-full flex flex-col items-center gap-2.5 sm:gap-3 cursor-default"
+            >
+              {/* Frosted Glass Header Pill */}
+              <div className="w-full flex justify-between items-center px-4 py-2.5 rounded-2xl bg-white/95 backdrop-blur-xl border border-white/60 shadow-xl text-slate-800">
+                <div className="flex items-center gap-2 truncate">
+                  <span className="px-2.5 py-0.5 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-[10px] font-mono font-semibold">
+                    {lightboxCert.badge}
+                  </span>
+                  <span className="text-xs sm:text-sm font-bold truncate text-slate-900">{lightboxCert.title}</span>
+                  <span className="text-xs text-slate-500 hidden sm:inline">• {lightboxCert.issuer}</span>
+                </div>
+
+                {/* Close Button */}
+                <motion.button 
+                  whileHover={{ scale: 1.1, rotate: 90 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => setLightboxCert(null)}
+                  className="p-1.5 rounded-full bg-slate-100 hover:bg-teal-600 hover:text-white text-slate-600 transition-colors shadow-sm flex items-center justify-center flex-shrink-0 ml-2"
+                  aria-label="Close certificate preview"
+                >
+                  <X className="w-4 h-4" />
+                </motion.button>
+              </div>
+
+              {/* Clean Certificate Image Viewport */}
+              <div className="relative w-full rounded-2xl overflow-hidden shadow-2xl flex items-center justify-center">
+                <img 
+                  src={lightboxCert.img} 
+                  alt={`${lightboxCert.title} Certificate`} 
+                  className="w-auto max-h-[75vh] sm:max-h-[80vh] object-contain rounded-2xl shadow-2xl" 
+                />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
     </div>
   );
