@@ -100,7 +100,7 @@ export default function Home() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Smooth scroll handler ensuring mobile menu state closes without canceling scroll
+  // Smooth Scroll navigation helper for mobile & desktop
   const handleNavClick = (e, targetId) => {
     e.preventDefault();
     setMobileMenuOpen(false);
@@ -379,7 +379,7 @@ export default function Home() {
         className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[1100px] h-[350px] sm:h-[500px] bg-gradient-to-b from-teal-100/80 via-emerald-50/50 to-transparent blur-3xl pointer-events-none" 
       />
 
-      {/* Floating Glass Navigation Header with Active Pill Indicator */}
+      {/* Floating Glass Navigation Header */}
       <motion.nav 
         initial={{ y: -50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -703,7 +703,7 @@ export default function Home() {
 
                       <div className="flex flex-wrap gap-1.5 pt-2 border-t border-slate-100">
                         {proj.tech.map((t, tIdx) => (
-                          <span key={tIdx} className="px-2.5 py-0.5 bg-teal-50/80 text-teal-800 border border-teal-200/60 text-[10px] font-mono rounded-md">
+                          <span key={tIdx} className="px-2 py-0.5 bg-teal-50/80 text-teal-800 border border-teal-200/60 text-[10px] font-mono rounded-md">
                             {t}
                           </span>
                         ))}
@@ -802,7 +802,7 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* Right Side: Clickable Certificate Image Viewport */}
+                  {/* Right Side: Clickable Certificate Image Frame */}
                   <div 
                     onClick={() => setLightboxCert(currentCert)}
                     className="w-full md:w-[380px] aspect-[1.41/1] bg-slate-100 rounded-2xl border border-slate-200 overflow-hidden shadow-inner relative group-hover:border-teal-300 transition-colors flex items-center justify-center cursor-pointer"
@@ -844,7 +844,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* DRAGGABLE TECH STACK SECTION */}
+        {/* DRAGGABLE TECH STACK SECTION (Naturally Centered & Open For Free Mobile Dragging) */}
         <section id="techstack" className="scroll-mt-24 space-y-5 sm:space-y-6 pt-6 sm:pt-8 border-t border-slate-200 text-center">
           <div className="max-w-xl mx-auto space-y-1.5 px-4">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-200/60 text-slate-700 text-[10px] sm:text-[11px] font-mono font-semibold">
@@ -855,7 +855,8 @@ export default function Home() {
 
           <div 
             ref={dragAreaRef}
-            className="p-5 sm:p-12 bg-white rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden min-h-[220px] sm:min-h-[240px] grid grid-cols-2 sm:flex sm:flex-wrap justify-center items-center gap-2.5 sm:gap-3 max-w-2xl mx-auto"
+            className="p-6 sm:p-12 bg-white rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden min-h-[340px] sm:min-h-[240px] flex flex-wrap justify-center items-center content-center gap-3 sm:gap-3.5 max-w-2xl mx-auto select-none"
+            style={{ touchAction: 'none' }}
           >
             {techPills.map((pill, idx) => (
               <motion.div
@@ -864,9 +865,9 @@ export default function Home() {
                 dragConstraints={dragAreaRef}
                 dragElastic={0.2}
                 dragTransition={{ bounceStiffness: 300, bounceDamping: 10 }}
-                whileHover={{ scale: 1.08 }}
+                whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
-                className={`w-full sm:w-auto px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl border text-center text-xs sm:text-sm font-mono font-semibold shadow-sm cursor-grab active:cursor-grabbing select-none flex items-center justify-center ${pill.color}`}
+                className={`w-fit px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl border text-center text-xs sm:text-sm font-mono font-semibold shadow-sm cursor-grab active:cursor-grabbing select-none flex items-center justify-center flex-shrink-0 ${pill.color}`}
               >
                 {pill.label}
               </motion.div>
@@ -991,7 +992,7 @@ export default function Home() {
                         transition={{ type: "spring", stiffness: 400, damping: 20 }}
                         className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1 rounded-lg bg-white/95 backdrop-blur-md border border-teal-200 text-teal-900 shadow-md shadow-teal-600/10 flex items-center gap-1.5 z-40 whitespace-nowrap pointer-events-none"
                       >
-                        <Check className="w-3 h-3 text-teal-600" />
+                        <Check className="w-3 text-teal-600" />
                         <span className="text-[11px] font-mono font-bold tracking-tight">Copied!</span>
                         <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-white rotate-45 border-r border-b border-teal-200" />
                       </motion.div>
@@ -1027,7 +1028,7 @@ export default function Home() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setLightboxCert(null)}
-            className="fixed inset-0 bg-slate-950/70 backdrop-blur-xl z-[99999] flex items-center justify-center p-3 sm:p-6 md:p-8 cursor-zoom-out"
+            className="fixed inset-0 bg-slate-900/50 backdrop-blur-2xl z-[99999] flex items-center justify-center p-3 sm:p-6 md:p-8 cursor-zoom-out"
           >
             <motion.div 
               initial={{ scale: 0.94, opacity: 0, y: 15 }}
@@ -1060,7 +1061,7 @@ export default function Home() {
               </div>
 
               {/* Clean Certificate Image Viewport */}
-              <div className="relative w-full rounded-2xl overflow-hidden shadow-2xl flex items-center justify-center">
+              <div className="relative w-full rounded-2xl overflow-hidden bg-transparent shadow-2xl flex items-center justify-center">
                 <img 
                   src={lightboxCert.img} 
                   alt={`${lightboxCert.title} Certificate`} 
