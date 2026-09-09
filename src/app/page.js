@@ -1,10 +1,198 @@
 'use client';
 
-import React, { useRef, useState, useEffect } from 'react';
-import { motion, useScroll, useTransform, useSpring, useMotionValue, AnimatePresence } from 'motion/react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
+import { motion, useScroll, useTransform, useSpring, useMotionValue, useVelocity, AnimatePresence } from 'motion/react';
 import { Mail, ExternalLink, Code2, Database, Layout, Wrench, ArrowUpRight, Sparkles, Move, Hospital, ShoppingBag, Coffee, CheckCircle, AlertCircle, Loader2, FileText, Menu, X, Globe, Eye, Award, Cpu, Smartphone, ChevronLeft, ChevronRight, Check, Copy } from 'lucide-react';
 
 const WEB3FORMS_ACCESS_KEY = process.env.NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY;
+
+// MagicUI Typing Animation Component
+function TypingAnimation({ 
+  words = [], 
+  duration = 100, 
+  deleteDuration = 50,
+  pauseDuration = 1800,
+  className = "" 
+}) {
+  const [currentWordIndex, setCurrentWordIndex] = useState(0);
+  const [currentText, setCurrentText] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    if (!words || words.length === 0) return;
+
+    const activeWord = words[currentWordIndex];
+
+    const timer = setTimeout(() => {
+      if (!isDeleting) {
+        if (currentText.length < activeWord.length) {
+          setCurrentText(activeWord.slice(0, currentText.length + 1));
+        } else {
+          setTimeout(() => setIsDeleting(true), pauseDuration);
+        }
+      } else {
+        if (currentText.length > 0) {
+          setCurrentText(activeWord.slice(0, currentText.length - 1));
+        } else {
+          setIsDeleting(false);
+          setCurrentWordIndex((prev) => (prev + 1) % words.length);
+        }
+      }
+    }, isDeleting ? deleteDuration : duration);
+
+    return () => clearTimeout(timer);
+  }, [currentText, isDeleting, currentWordIndex, words, duration, deleteDuration, pauseDuration]);
+
+  return (
+    <span className={`inline-flex items-center tracking-tight ${className}`}>
+      <span>{currentText}</span>
+      <motion.span
+        animate={{ opacity: [0, 1, 0] }}
+        transition={{ duration: 0.8, repeat: Infinity, ease: "easeInOut" }}
+        className="inline-block w-[3px] sm:w-[4px] h-[0.9em] bg-teal-600 ml-1.5 rounded-full align-middle"
+      />
+    </span>
+  );
+}
+
+// Skiper-106 Smooth Spring Caret Input with Active Click & Selection Tracking
+function SmoothCaretInput({
+  name,
+  type = "text",
+  required,
+  value,
+  onChange,
+  placeholder,
+  className = "",
+  focused,
+  onFocus,
+  onBlur
+}) {
+  const caretX = useMotionValue(0);
+  const caretOpacity = useMotionValue(0);
+  const inputRef = useRef(null);
+  const measureRef = useRef(null);
+
+  const springCaretX = useSpring(caretX, {
+    stiffness: 500,
+    damping: 32,
+    mass: 0.45,
+  });
+
+  const syncMeasureSpan = () => {
+    const input = inputRef.current;
+    const measureSpan = measureRef.current;
+    if (!input || !measureSpan) return;
+
+    const styles = window.getComputedStyle(input);
+    measureSpan.style.font = `${styles.fontStyle} ${styles.fontWeight} ${styles.fontSize} ${styles.fontFamily}`;
+    measureSpan.style.letterSpacing = styles.letterSpacing;
+  };
+
+  const measurePrefixWidth = (text) => {
+    const input = inputRef.current;
+    const measureSpan = measureRef.current;
+    if (!input || !measureSpan) return null;
+
+    syncMeasureSpan();
+    measureSpan.textContent = text;
+    const paddingLeft = parseFloat(window.getComputedStyle(input).paddingLeft) || 0;
+    return text.length > 0 ? measureSpan.offsetWidth + paddingLeft : paddingLeft;
+  };
+
+  const updateCaret = useCallback((target) => {
+    if (!target) return;
+    const selectionStart = target.selectionStart ?? 0;
+    const selectionEnd = target.selectionEnd ?? 0;
+    const textBeforeCaret = target.value.slice(0, selectionStart);
+    const absoluteWidth = measurePrefixWidth(textBeforeCaret);
+    if (absoluteWidth === null) return;
+
+    const styles = window.getComputedStyle(target);
+    const paddingLeft = parseFloat(styles.paddingLeft) || 0;
+    const paddingRight = parseFloat(styles.paddingRight) || 0;
+    const caretPosition = absoluteWidth - target.scrollLeft;
+    const minX = paddingLeft;
+    const maxX = target.clientWidth - paddingRight;
+
+    caretX.set(Math.min(Math.max(caretPosition, minX), maxX));
+    if (selectionStart !== selectionEnd) {
+      caretOpacity.set(0);
+    } else {
+      caretOpacity.set(1);
+    }
+  }, [caretX, caretOpacity]);
+
+  // Sync cursor on external value change
+  useEffect(() => {
+    if (inputRef.current && document.activeElement === inputRef.current) {
+      updateCaret(inputRef.current);
+    }
+  }, [value, updateCaret]);
+
+  // Global document selection listener ensuring clicks inside existing text update the spring caret immediately
+  useEffect(() => {
+    const handleSelectionChange = () => {
+      if (inputRef.current && document.activeElement === inputRef.current) {
+        requestAnimationFrame(() => updateCaret(inputRef.current));
+      }
+    };
+
+    document.addEventListener("selectionchange", handleSelectionChange);
+    return () => document.removeEventListener("selectionchange", handleSelectionChange);
+  }, [updateCaret]);
+
+  return (
+    <div className={`relative flex items-center rounded-xl border transition-all duration-300 ${
+      focused 
+        ? 'border-teal-500 shadow-sm shadow-teal-500/10 ring-2 ring-teal-500/20 bg-white' 
+        : 'border-slate-200 bg-slate-50'
+    } ${className}`}>
+      <input
+        ref={inputRef}
+        type={type}
+        name={name}
+        required={required}
+        value={value}
+        placeholder={placeholder}
+        onChange={(e) => {
+          onChange(e);
+          requestAnimationFrame(() => updateCaret(e.target));
+        }}
+        onClick={(e) => {
+          requestAnimationFrame(() => updateCaret(e.target));
+        }}
+        onKeyUp={(e) => {
+          requestAnimationFrame(() => updateCaret(e.target));
+        }}
+        onSelect={(e) => {
+          requestAnimationFrame(() => updateCaret(e.target));
+        }}
+        onFocus={(e) => {
+          onFocus?.();
+          requestAnimationFrame(() => updateCaret(e.target));
+          caretOpacity.set(1);
+        }}
+        onBlur={(e) => {
+          onBlur?.();
+          caretOpacity.set(0);
+        }}
+        className="w-full px-4 py-3 rounded-xl bg-transparent text-slate-800 placeholder-slate-400 text-xs sm:text-sm outline-none caret-transparent"
+      />
+      {/* Invisible Measurement Span */}
+      <span
+        ref={measureRef}
+        aria-hidden
+        className="pointer-events-none invisible absolute top-0 left-0 whitespace-pre"
+      />
+      {/* Spring Animated Smooth Caret */}
+      <motion.div
+        className="pointer-events-none absolute h-[1.1em] w-[2px] bg-teal-600 rounded-full"
+        style={{ x: springCaretX, opacity: caretOpacity }}
+      />
+    </div>
+  );
+}
 
 const GithubIcon = ({ className = "w-5 h-5" }) => (
   <svg className={className} fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -18,23 +206,22 @@ const LinkedinIcon = ({ className = "w-5 h-5" }) => (
   </svg>
 );
 
+// 3D Magnetic Interactive Card
 function TiltCard({ children, className }) {
   const cardRef = useRef(null);
   const x = useMotionValue(0);
   const y = useMotionValue(0);
 
-  const rotateX = useSpring(useTransform(y, [-0.5, 0.5], [5, -5]), { stiffness: 200, damping: 20 });
-  const rotateY = useSpring(useTransform(x, [-0.5, 0.5], [-5, 5]), { stiffness: 200, damping: 20 });
+  const rotateX = useSpring(useTransform(y, [-0.5, 0.5], [6, -6]), { stiffness: 220, damping: 20 });
+  const rotateY = useSpring(useTransform(x, [-0.5, 0.5], [-6, 6]), { stiffness: 220, damping: 20 });
 
   const handleMouseMove = (e) => {
     if (!cardRef.current || (typeof window !== 'undefined' && window.innerWidth < 768)) return;
     const rect = cardRef.current.getBoundingClientRect();
-    const width = rect.width;
-    const height = rect.height;
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
-    x.set(mouseX / width - 0.5);
-    y.set(mouseY / height - 0.5);
+    x.set(mouseX / rect.width - 0.5);
+    y.set(mouseY / rect.height - 0.5);
   };
 
   const handleMouseLeave = () => {
@@ -55,6 +242,29 @@ function TiltCard({ children, className }) {
   );
 }
 
+// Progressive Parallax and Scroll Velocity Tilt
+function ScrollMorphCard({ children, index = 0 }) {
+  const ref = useRef(null);
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ["start end", "end start"]
+  });
+
+  const rawScale = useTransform(scrollYProgress, [0, 0.4, 0.6, 1], [0.93, 1, 1, 0.95]);
+  const rawY = useTransform(scrollYProgress, [0, 0.4, 0.7, 1], [40, 0, 0, -30]);
+  const rawRotate = useTransform(scrollYProgress, [0, 0.4, 0.7, 1], [index % 2 === 0 ? -1.5 : 1.5, 0, 0, index % 2 === 0 ? 1 : -1]);
+
+  const scale = useSpring(rawScale, { stiffness: 120, damping: 20 });
+  const y = useSpring(rawY, { stiffness: 120, damping: 20 });
+  const rotate = useSpring(rawRotate, { stiffness: 120, damping: 20 });
+
+  return (
+    <motion.div ref={ref} style={{ scale, y, rotate }} className="h-full">
+      {children}
+    </motion.div>
+  );
+}
+
 export default function Home() {
   const containerRef = useRef(null);
   const dragAreaRef = useRef(null);
@@ -69,12 +279,37 @@ export default function Home() {
   const [direction, setDirection] = useState(1);
   const [lightboxCert, setLightboxCert] = useState(null);
 
+  // Role options for MagicUI Typing Animation
+  const typingRoles = ["Web Developer", "Full-Stack Engineer", "MERN Stack Specialist", "Next.js Architect"];
+
   // Copy Email State
   const [copiedEmail, setCopiedEmail] = useState(false);
 
-  // Form State
+  // Form State & Dynamic Interactive Focus
   const [formData, setFormData] = useState({ name: '', email: '', message: '' });
   const [formStatus, setFormStatus] = useState('idle');
+  const [focusedInput, setFocusedInput] = useState(null);
+
+  // Scroll Progress & Smoothing
+  const { scrollYProgress } = useScroll();
+  const smoothProgress = useSpring(scrollYProgress, { stiffness: 100, damping: 20 });
+  const scaleX = useSpring(scrollYProgress, { stiffness: 120, damping: 24 });
+  const heroY = useTransform(smoothProgress, [0, 0.4], [0, -30]);
+
+  // Mouse Follower
+  const mouseX = useMotionValue(-100);
+  const mouseY = useMotionValue(-100);
+  const smoothMouseX = useSpring(mouseX, { stiffness: 140, damping: 18 });
+  const smoothMouseY = useSpring(mouseY, { stiffness: 140, damping: 18 });
+
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      mouseX.set(e.clientX - 100);
+      mouseY.set(e.clientY - 100);
+    };
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, [mouseX, mouseY]);
 
   // ScrollSpy Listener
   useEffect(() => {
@@ -100,7 +335,7 @@ export default function Home() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Smooth Scroll navigation helper for mobile & desktop
+  // Smooth Scroll Navigation Handler
   const handleNavClick = (e, targetId) => {
     e.preventDefault();
     setMobileMenuOpen(false);
@@ -174,26 +409,6 @@ export default function Home() {
       setFormStatus('error');
     }
   };
-
-  // Mouse Follower
-  const mouseX = useMotionValue(-100);
-  const mouseY = useMotionValue(-100);
-  const smoothMouseX = useSpring(mouseX, { stiffness: 150, damping: 15 });
-  const smoothMouseY = useSpring(mouseY, { stiffness: 150, damping: 15 });
-
-  useEffect(() => {
-    const handleMouseMove = (e) => {
-      mouseX.set(e.clientX - 100);
-      mouseY.set(e.clientY - 100);
-    };
-    window.addEventListener("mousemove", handleMouseMove);
-    return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, [mouseX, mouseY]);
-
-  // Smooth Scroll Parallax
-  const { scrollYProgress } = useScroll();
-  const smoothProgress = useSpring(scrollYProgress, { stiffness: 100, damping: 20 });
-  const heroY = useTransform(smoothProgress, [0, 0.4], [0, -30]);
 
   const navLinks = [
     { id: "about", label: "About" },
@@ -324,21 +539,21 @@ export default function Home() {
 
   const slideVariants = {
     initial: (direction) => ({
-      x: direction > 0 ? 60 : -60,
+      x: direction > 0 ? 55 : -55,
       opacity: 0,
-      scale: 0.98
+      scale: 0.97
     }),
     animate: {
       x: 0,
       opacity: 1,
       scale: 1,
-      transition: { duration: 0.4, ease: "easeOut" }
+      transition: { duration: 0.45, ease: [0.16, 1, 0.3, 1] }
     },
     exit: (direction) => ({
-      x: direction < 0 ? 60 : -60,
+      x: direction < 0 ? 55 : -55,
       opacity: 0,
-      scale: 0.98,
-      transition: { duration: 0.4, ease: "easeIn" }
+      scale: 0.97,
+      transition: { duration: 0.45, ease: [0.16, 1, 0.3, 1] }
     })
   };
 
@@ -366,7 +581,13 @@ export default function Home() {
   return (
     <div ref={containerRef} className="bg-slate-50 text-slate-800 min-h-screen font-sans selection:bg-teal-500/20 selection:text-teal-900 relative overflow-x-hidden">
       
-      {/* Liquid Mouse Glow Follower (Desktop only) */}
+      {/* Top Velocity Scroll Progress Line */}
+      <motion.div
+        style={{ scaleX }}
+        className="fixed top-0 left-0 right-0 h-1 bg-gradient-to-r from-teal-500 via-emerald-400 to-teal-600 origin-left z-[9999]"
+      />
+
+      {/* Liquid Mouse Glow Follower */}
       <motion.div
         style={{ x: smoothMouseX, y: smoothMouseY }}
         className="fixed top-0 left-0 w-52 h-52 bg-gradient-to-tr from-teal-300/30 via-emerald-200/20 to-cyan-300/30 rounded-full blur-3xl pointer-events-none z-30 hidden md:block"
@@ -374,16 +595,16 @@ export default function Home() {
 
       {/* Ambient Gradient Glow Background */}
       <motion.div 
-        animate={{ scale: [1, 1.1, 1], opacity: [0.5, 0.7, 0.5] }}
+        animate={{ scale: [1, 1.08, 1], opacity: [0.5, 0.7, 0.5] }}
         transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
         className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[1100px] h-[350px] sm:h-[500px] bg-gradient-to-b from-teal-100/80 via-emerald-50/50 to-transparent blur-3xl pointer-events-none" 
       />
 
-      {/* Floating Glass Navigation Header */}
+      {/* Floating Glass Navigation Header with Active Pill Indicator */}
       <motion.nav 
         initial={{ y: -50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ type: "spring", stiffness: 200, damping: 20 }}
+        transition={{ type: "spring", stiffness: 220, damping: 22 }}
         className="fixed top-2.5 sm:top-3 left-1/2 -translate-x-1/2 w-[94%] max-w-5xl bg-white/85 backdrop-blur-md border border-slate-200/90 rounded-2xl z-50 shadow-sm"
       >
         <div className="px-4 sm:px-5 py-2.5 flex justify-between items-center">
@@ -455,7 +676,7 @@ export default function Home() {
                     }`}
                   >
                     <span>{link.label}</span>
-                    {isActive && <span className="w-2 h-2 rounded-full bg-teal-600" />}
+                    {isActive && <span className="w-2 h-2 rounded-full bg-teal-600 animate-pulse" />}
                   </a>
                 );
               })}
@@ -466,34 +687,45 @@ export default function Home() {
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 pt-24 sm:pt-36 pb-16 sm:pb-20 space-y-16 sm:space-y-32">
         
-        {/* Hero Section */}
+        {/* Hero Section with MagicUI Typing Animation */}
         <section id="about" className="scroll-mt-28 min-h-[50vh] sm:min-h-[60vh] flex flex-col justify-center space-y-5 sm:space-y-6 relative pt-4">
           <motion.div style={{ y: heroY }} className="space-y-4 sm:space-y-6">
             <motion.div 
-              animate={{ y: [0, -4, 0] }}
-              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+              initial={{ opacity: 0, y: -12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
               className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] sm:text-xs font-mono font-semibold text-teal-800 bg-teal-50 border border-teal-200 shadow-sm w-fit"
             >
               <Sparkles className="w-3.5 h-3.5 text-teal-600 flex-shrink-0" />
               Available for Web Development Roles
             </motion.div>
 
-            <motion.h1 
-              initial={{ opacity: 0, y: 25 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ type: "spring", stiffness: 150, damping: 15 }}
-              className="text-3xl sm:text-5xl md:text-7xl font-extrabold tracking-tight text-slate-900 leading-[1.15]"
-            >
-              Hi, I'm Easwar R <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-700 via-teal-600 to-emerald-600">
-                Web Developer
-              </span>
-            </motion.h1>
+            <div className="space-y-1 sm:space-y-2">
+              <motion.h1 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ type: "spring", stiffness: 140, damping: 18 }}
+                className="text-3xl sm:text-5xl md:text-7xl font-extrabold tracking-tight text-slate-900 leading-[1.15]"
+              >
+                Hi, I'm Easwar R
+              </motion.h1>
+
+              {/* MagicUI Typing Animation Wrapper */}
+              <div className="min-h-[44px] sm:min-h-[64px] md:min-h-[80px] flex items-center">
+                <TypingAnimation
+                  words={typingRoles}
+                  duration={90}
+                  deleteDuration={40}
+                  pauseDuration={1900}
+                  className="text-2xl sm:text-4xl md:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-teal-700 via-teal-600 to-emerald-600"
+                />
+              </div>
+            </div>
 
             <motion.p 
-              initial={{ opacity: 0, y: 25 }}
+              initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ type: "spring", stiffness: 150, damping: 15, delay: 0.1 }}
+              transition={{ type: "spring", stiffness: 140, damping: 18, delay: 0.15 }}
               className="text-slate-600 text-sm sm:text-base md:text-xl max-w-2xl leading-relaxed"
             >
               Crafting responsive web platforms, enterprise ERP systems, and real-time backend architectures built for performance and seamless user experiences.
@@ -502,11 +734,11 @@ export default function Home() {
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ type: "spring", stiffness: 150, damping: 15, delay: 0.2 }}
+              transition={{ type: "spring", stiffness: 140, damping: 18, delay: 0.25 }}
               className="flex flex-col sm:flex-row flex-wrap gap-2.5 sm:gap-4 pt-1"
             >
               <motion.a 
-                whileHover={{ scale: 1.02 }}
+                whileHover={{ scale: 1.03, y: -2 }}
                 whileTap={{ scale: 0.97 }}
                 href="#work" 
                 onClick={(e) => handleNavClick(e, "work")}
@@ -515,9 +747,9 @@ export default function Home() {
                 View Selected Work <ArrowUpRight className="w-4 h-4" />
               </motion.a>
 
-              {/* View Resume Online Button */}
+              {/* View Resume Button */}
               <motion.a 
-                whileHover={{ scale: 1.02 }}
+                whileHover={{ scale: 1.03, y: -2 }}
                 whileTap={{ scale: 0.97 }}
                 href="/resume.pdf" 
                 target="_blank"
@@ -528,7 +760,7 @@ export default function Home() {
               </motion.a>
 
               <motion.a 
-                whileHover={{ scale: 1.02 }}
+                whileHover={{ scale: 1.03, y: -2 }}
                 whileTap={{ scale: 0.97 }}
                 href="#contact" 
                 onClick={(e) => handleNavClick(e, "contact")}
@@ -540,7 +772,7 @@ export default function Home() {
           </motion.div>
         </section>
 
-        {/* OFFERINGS Section */}
+        {/* OFFERINGS Section with Scroll Velocity Reveal */}
         <section id="offerings" className="scroll-mt-24 space-y-5 sm:space-y-8 pt-6 sm:pt-8 border-t border-slate-200">
           <div className="space-y-1">
             <span className="text-[11px] sm:text-xs font-mono font-semibold text-teal-600 uppercase tracking-widest">Capabilities</span>
@@ -548,57 +780,45 @@ export default function Home() {
           </div>
 
           <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-3.5 sm:gap-6">
-            <motion.div 
-              initial={{ opacity: 0, y: 25 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-40px" }}
-              transition={{ type: "spring", stiffness: 200, damping: 20 }}
-              className="p-5 sm:p-8 rounded-2xl bg-white border border-slate-200/90 shadow-sm hover:shadow-md hover:border-teal-300 transition-all space-y-2.5 sm:space-y-3 cursor-default"
-            >
-              <div className="p-2.5 sm:p-3 rounded-xl bg-teal-50 border border-teal-100 text-teal-600 w-fit">
-                <Layout className="w-5 h-5 sm:w-6 sm:h-6" />
+            <ScrollMorphCard index={0}>
+              <div className="p-5 sm:p-8 rounded-2xl bg-white border border-slate-200/90 shadow-sm hover:shadow-md hover:border-teal-300 transition-all space-y-2.5 sm:space-y-3 h-full cursor-default">
+                <div className="p-2.5 sm:p-3 rounded-xl bg-teal-50 border border-teal-100 text-teal-600 w-fit">
+                  <Layout className="w-5 h-5 sm:w-6 sm:h-6" />
+                </div>
+                <h3 className="text-base sm:text-xl font-bold text-slate-900">Frontend Engineering</h3>
+                <p className="text-slate-600 text-xs sm:text-sm leading-relaxed">
+                  Building fast, responsive web applications using Next.js and React.js paired with fluid motion for modern user interfaces.
+                </p>
               </div>
-              <h3 className="text-base sm:text-xl font-bold text-slate-900">Frontend Engineering</h3>
-              <p className="text-slate-600 text-xs sm:text-sm leading-relaxed">
-                Building fast, responsive web applications using Next.js and React.js paired with fluid motion for modern user interfaces.
-              </p>
-            </motion.div>
+            </ScrollMorphCard>
 
-            <motion.div 
-              initial={{ opacity: 0, y: 25 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-40px" }}
-              transition={{ type: "spring", stiffness: 200, damping: 20, delay: 0.05 }}
-              className="p-5 sm:p-8 rounded-2xl bg-white border border-slate-200/90 shadow-sm hover:shadow-md hover:border-teal-300 transition-all space-y-2.5 sm:space-y-3 cursor-default"
-            >
-              <div className="p-2.5 sm:p-3 rounded-xl bg-teal-50 border border-teal-100 text-teal-600 w-fit">
-                <Database className="w-5 h-5 sm:w-6 sm:h-6" />
+            <ScrollMorphCard index={1}>
+              <div className="p-5 sm:p-8 rounded-2xl bg-white border border-slate-200/90 shadow-sm hover:shadow-md hover:border-teal-300 transition-all space-y-2.5 sm:space-y-3 h-full cursor-default">
+                <div className="p-2.5 sm:p-3 rounded-xl bg-teal-50 border border-teal-100 text-teal-600 w-fit">
+                  <Database className="w-5 h-5 sm:w-6 sm:h-6" />
+                </div>
+                <h3 className="text-base sm:text-xl font-bold text-slate-900">Backend & APIs</h3>
+                <p className="text-slate-600 text-xs sm:text-sm leading-relaxed">
+                  Designing robust REST APIs, real-time WebSocket pipelines with Socket.io, and database management using Express.js and MongoDB.
+                </p>
               </div>
-              <h3 className="text-base sm:text-xl font-bold text-slate-900">Backend & APIs</h3>
-              <p className="text-slate-600 text-xs sm:text-sm leading-relaxed">
-                Designing robust REST APIs, real-time WebSocket pipelines with Socket.io, and database management using Express.js and MongoDB.
-              </p>
-            </motion.div>
+            </ScrollMorphCard>
 
-            <motion.div 
-              initial={{ opacity: 0, y: 25 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-40px" }}
-              transition={{ type: "spring", stiffness: 200, damping: 20, delay: 0.1 }}
-              className="p-5 sm:p-8 rounded-2xl bg-white border border-slate-200/90 shadow-sm hover:shadow-md hover:border-teal-300 transition-all space-y-2.5 sm:space-y-3 cursor-default sm:col-span-2 md:col-span-1"
-            >
-              <div className="p-2.5 sm:p-3 rounded-xl bg-teal-50 border border-teal-100 text-teal-600 w-fit">
-                <Wrench className="w-5 h-5 sm:w-6 sm:h-6" />
+            <ScrollMorphCard index={2}>
+              <div className="p-5 sm:p-8 rounded-2xl bg-white border border-slate-200/90 shadow-sm hover:shadow-md hover:border-teal-300 transition-all space-y-2.5 sm:space-y-3 h-full cursor-default sm:col-span-2 md:col-span-1">
+                <div className="p-2.5 sm:p-3 rounded-xl bg-teal-50 border border-teal-100 text-teal-600 w-fit">
+                  <Wrench className="w-5 h-5 sm:w-6 sm:h-6" />
+                </div>
+                <h3 className="text-base sm:text-xl font-bold text-slate-900">Enterprise Solutions</h3>
+                <p className="text-slate-600 text-xs sm:text-sm leading-relaxed">
+                  Engineered MERN stack ERP applications with role-based access control, invoice PDF rendering, and administrative dashboards.
+                </p>
               </div>
-              <h3 className="text-base sm:text-xl font-bold text-slate-900">Enterprise Solutions</h3>
-              <p className="text-slate-600 text-xs sm:text-sm leading-relaxed">
-                Engineered MERN stack ERP applications with role-based access control, invoice PDF rendering, and administrative dashboards.
-              </p>
-            </motion.div>
+            </ScrollMorphCard>
           </div>
         </section>
 
-        {/* WORK SECTION */}
+        {/* WORK SECTION with Progressive Scroll Morphing Cards */}
         <section id="work" className="scroll-mt-24 space-y-5 sm:space-y-8 pt-6 sm:pt-8 border-t border-slate-200">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
             <div className="space-y-1">
@@ -623,24 +843,15 @@ export default function Home() {
             </div>
           </div>
 
-          {/* 3-Column Card Grid */}
-          <motion.div layout className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+          {/* 3-Column Scroll Morph Card Grid */}
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             <AnimatePresence>
-              {filteredProjects.map((proj) => (
-                <motion.div
-                  key={proj.id}
-                  layout
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.35 }}
-                >
+              {filteredProjects.map((proj, pIdx) => (
+                <ScrollMorphCard key={proj.id} index={pIdx}>
                   <TiltCard className="bg-white rounded-3xl overflow-hidden border border-slate-200/90 shadow-sm hover:shadow-xl hover:border-teal-300/80 transition-all flex flex-col justify-between h-full group">
                     
-                    {/* Top Device Window Frame */}
+                    {/* Top Browser Header Bar */}
                     <div className="relative w-full aspect-[4/3] bg-slate-900 overflow-hidden flex flex-col">
-                      
-                      {/* Browser Header Bar */}
                       <div className="bg-slate-800/90 px-3 py-1.5 sm:py-2 flex items-center justify-between border-b border-slate-700/80 z-10 flex-shrink-0">
                         <div className="flex items-center gap-1.5">
                           <span className="w-2 h-2 rounded-full bg-red-500/80 inline-block" />
@@ -663,7 +874,6 @@ export default function Home() {
                           loading="lazy"
                         />
                         
-                        {/* Interactive Preview Overlay */}
                         <div className="absolute inset-0 bg-slate-950/20 backdrop-blur-[1px] opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center pointer-events-none">
                           <span className="px-4 py-2 rounded-full bg-white/95 text-slate-900 text-xs font-mono font-semibold shadow-lg flex items-center gap-1.5 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300 border border-slate-200">
                             <Eye className="w-3.5 h-3.5 text-teal-600" /> Interactive Preview
@@ -703,7 +913,7 @@ export default function Home() {
 
                       <div className="flex flex-wrap gap-1.5 pt-2 border-t border-slate-100">
                         {proj.tech.map((t, tIdx) => (
-                          <span key={tIdx} className="px-2 py-0.5 bg-teal-50/80 text-teal-800 border border-teal-200/60 text-[10px] font-mono rounded-md">
+                          <span key={tIdx} className="px-2.5 py-0.5 bg-teal-50/80 text-teal-800 border border-teal-200/60 text-[10px] font-mono rounded-md">
                             {t}
                           </span>
                         ))}
@@ -711,13 +921,13 @@ export default function Home() {
                     </div>
 
                   </TiltCard>
-                </motion.div>
+                </ScrollMorphCard>
               ))}
             </AnimatePresence>
-          </motion.div>
+          </div>
         </section>
 
-        {/* CERTIFICATIONS SECTION: Slideshow with Touch-Swipe Gestures */}
+        {/* CERTIFICATIONS SECTION: Swipeable Carousel */}
         <section id="certificates" className="scroll-mt-24 space-y-5 sm:space-y-8 pt-6 sm:pt-8 border-t border-slate-200">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
             <div className="space-y-1">
@@ -725,7 +935,7 @@ export default function Home() {
               <h2 className="text-2xl sm:text-4xl md:text-5xl font-black tracking-tight text-slate-900">Certifications</h2>
             </div>
 
-            {/* Manual Controls */}
+            {/* Controls */}
             <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto">
               <span className="text-xs font-mono text-slate-500">
                 {certIndex + 1} / {certificates.length}
@@ -749,7 +959,7 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Swipeable Slideshow Container */}
+          {/* Swipeable Slideshow */}
           <div className="relative max-w-4xl mx-auto min-h-[340px] sm:min-h-[320px] flex items-center justify-center overflow-hidden">
             <AnimatePresence custom={direction} mode="wait">
               <motion.div
@@ -774,7 +984,7 @@ export default function Home() {
               >
                 <TiltCard className="p-4 sm:p-8 bg-white rounded-3xl border border-slate-200/90 shadow-md sm:shadow-lg hover:border-teal-300 transition-all flex flex-col md:flex-row justify-between items-stretch gap-4 sm:gap-6 relative overflow-hidden group">
                   
-                  {/* Left Side: Certificate Text Details */}
+                  {/* Left Details */}
                   <div className="space-y-3 sm:space-y-4 max-w-md flex flex-col justify-between z-10">
                     <div className="space-y-2 sm:space-y-3">
                       <div className="flex items-center gap-2 sm:gap-2.5">
@@ -802,7 +1012,7 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* Right Side: Clickable Certificate Image Frame */}
+                  {/* Right Image Frame */}
                   <div 
                     onClick={() => setLightboxCert(currentCert)}
                     className="w-full md:w-[380px] aspect-[1.41/1] bg-slate-100 rounded-2xl border border-slate-200 overflow-hidden shadow-inner relative group-hover:border-teal-300 transition-colors flex items-center justify-center cursor-pointer"
@@ -813,7 +1023,6 @@ export default function Home() {
                       className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
                     />
 
-                    {/* Hover Overlay */}
                     <div className="absolute inset-0 bg-slate-950/20 backdrop-blur-[1px] opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                       <span className="px-3.5 py-2 rounded-full bg-white/95 text-slate-900 text-xs font-mono font-semibold shadow-md flex items-center gap-1.5 border border-slate-200 hover:bg-teal-600 hover:text-white transition-colors">
                         <FileText className="w-3.5 h-3.5 text-teal-600 group-hover:text-white" /> View Full Certificate
@@ -844,7 +1053,59 @@ export default function Home() {
           </div>
         </section>
 
-        {/* DRAGGABLE TECH STACK SECTION (Naturally Centered & Open For Free Mobile Dragging) */}
+        {/* FULLSCREEN ISOLATED WHITE FROSTED GLASS LIGHTBOX MODAL */}
+        <AnimatePresence>
+          {lightboxCert && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setLightboxCert(null)}
+              className="fixed inset-0 bg-slate-950/70 backdrop-blur-xl z-[99999] flex items-center justify-center p-3 sm:p-6 md:p-8 cursor-zoom-out"
+            >
+              <motion.div 
+                initial={{ scale: 0.94, opacity: 0, y: 15 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.94, opacity: 0, y: 15 }}
+                transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                onClick={(e) => e.stopPropagation()}
+                className="relative max-w-4xl w-full flex flex-col items-center gap-2.5 sm:gap-3 cursor-default"
+              >
+                {/* Header Pill */}
+                <div className="w-full flex justify-between items-center px-4 py-2.5 rounded-2xl bg-white/95 backdrop-blur-xl border border-white/60 shadow-xl text-slate-800">
+                  <div className="flex items-center gap-2 truncate">
+                    <span className="px-2.5 py-0.5 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-[10px] font-mono font-semibold">
+                      {lightboxCert.badge}
+                    </span>
+                    <span className="text-xs sm:text-sm font-bold truncate text-slate-900">{lightboxCert.title}</span>
+                    <span className="text-xs text-slate-500 hidden sm:inline">• {lightboxCert.issuer}</span>
+                  </div>
+
+                  <motion.button 
+                    whileHover={{ scale: 1.1, rotate: 90 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => setLightboxCert(null)}
+                    className="p-1.5 rounded-full bg-slate-100 hover:bg-teal-600 hover:text-white text-slate-600 transition-colors shadow-sm flex items-center justify-center flex-shrink-0 ml-2"
+                    aria-label="Close certificate preview"
+                  >
+                    <X className="w-4 h-4" />
+                  </motion.button>
+                </div>
+
+                {/* Image Viewport */}
+                <div className="relative w-full rounded-2xl overflow-hidden shadow-2xl flex items-center justify-center">
+                  <img 
+                    src={lightboxCert.img} 
+                    alt={`${lightboxCert.title} Certificate`} 
+                    className="w-auto max-h-[75vh] sm:max-h-[80vh] object-contain rounded-2xl shadow-2xl" 
+                  />
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* DRAGGABLE TECH STACK SECTION */}
         <section id="techstack" className="scroll-mt-24 space-y-5 sm:space-y-6 pt-6 sm:pt-8 border-t border-slate-200 text-center">
           <div className="max-w-xl mx-auto space-y-1.5 px-4">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-200/60 text-slate-700 text-[10px] sm:text-[11px] font-mono font-semibold">
@@ -875,7 +1136,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* CONTACT FORM */}
+        {/* CONTACT FORM with Skiper-106 Smooth Spring Caret Inputs */}
         <section id="contact" className="scroll-mt-24 space-y-6 sm:space-y-8 pt-6 sm:pt-8 border-t border-slate-200">
           <motion.div 
             initial={{ opacity: 0, y: 25 }}
@@ -910,7 +1171,7 @@ export default function Home() {
                 </button>
               </motion.div>
             ) : (
-              <form className="space-y-3 sm:space-y-4" onSubmit={handleFormSubmit}>
+              <form className="space-y-4 pt-1" onSubmit={handleFormSubmit}>
                 {formStatus === 'error' && (
                   <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2">
                     <AlertCircle className="w-4 h-4 flex-shrink-0" />
@@ -919,40 +1180,61 @@ export default function Home() {
                 )}
 
                 <div className="grid sm:grid-cols-2 gap-3 sm:gap-4">
-                  <input 
-                    type="text" 
+                  {/* Skiper-106 Smooth Spring Caret: Name */}
+                  <SmoothCaretInput
+                    type="text"
                     name="name"
                     required
                     value={formData.name}
+                    focused={focusedInput === 'name'}
+                    onFocus={() => setFocusedInput('name')}
+                    onBlur={() => setFocusedInput(null)}
                     onChange={handleInputChange}
-                    placeholder="Your Name" 
-                    className="w-full px-3.5 sm:px-4 py-2.5 sm:py-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/50"
+                    placeholder="Your Name"
                   />
-                  <input 
-                    type="email" 
+
+                  {/* Skiper-106 Smooth Spring Caret: Email */}
+                  <SmoothCaretInput
+                    type="email"
                     name="email"
                     required
                     value={formData.email}
+                    focused={focusedInput === 'email'}
+                    onFocus={() => setFocusedInput('email')}
+                    onBlur={() => setFocusedInput(null)}
                     onChange={handleInputChange}
-                    placeholder="Your Email" 
-                    className="w-full px-3.5 sm:px-4 py-2.5 sm:py-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/50"
+                    placeholder="Your Email"
                   />
                 </div>
-                <textarea 
-                  name="message"
-                  required
-                  rows="4" 
-                  value={formData.message}
-                  onChange={handleInputChange}
-                  placeholder="Tell me about your project or opportunity..." 
-                  className="w-full px-3.5 sm:px-4 py-2.5 sm:py-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/50"
-                />
+
+                {/* Animated Textarea */}
+                <motion.div 
+                  animate={{ scale: focusedInput === 'message' ? 1.01 : 1 }}
+                  className={`relative rounded-xl border transition-all duration-300 ${
+                    focusedInput === 'message' 
+                      ? 'border-teal-500 shadow-sm shadow-teal-500/10 ring-2 ring-teal-500/20 bg-white' 
+                      : 'border-slate-200 bg-slate-50'
+                  }`}
+                >
+                  <textarea 
+                    name="message"
+                    required
+                    rows="4" 
+                    value={formData.message}
+                    onFocus={() => setFocusedInput('message')}
+                    onBlur={() => setFocusedInput(null)}
+                    onChange={handleInputChange}
+                    placeholder="Tell me about your project or opportunity..." 
+                    className="w-full px-4 py-3 rounded-xl bg-transparent text-slate-800 placeholder-slate-400 text-xs sm:text-sm focus:outline-none resize-none"
+                  />
+                </motion.div>
+
                 <motion.button 
                   whileHover={{ scale: 1.01 }}
                   whileTap={{ scale: 0.98 }}
                   disabled={formStatus === 'submitting'}
                   type="submit" 
-                  className="w-full bg-teal-600 active:bg-teal-700 text-white font-semibold py-3 sm:py-3.5 rounded-xl shadow-md shadow-teal-600/20 flex items-center justify-center gap-2 disabled:opacity-70 transition-all text-xs sm:text-sm"
+                  className="w-full bg-teal-600 active:bg-teal-700 text-white font-semibold py-3.5 rounded-xl shadow-md shadow-teal-600/20 flex items-center justify-center gap-2 disabled:opacity-70 transition-all text-xs sm:text-sm"
                 >
                   {formStatus === 'submitting' ? (
                     <>
@@ -982,7 +1264,6 @@ export default function Home() {
                     {copiedEmail ? <Check className="w-3.5 h-3.5 text-teal-600" /> : <Copy className="w-3.5 h-3.5" />}
                   </button>
 
-                  {/* Styled Glassmorphism Notification Tooltip */}
                   <AnimatePresence>
                     {copiedEmail && (
                       <motion.div
@@ -992,7 +1273,7 @@ export default function Home() {
                         transition={{ type: "spring", stiffness: 400, damping: 20 }}
                         className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1 rounded-lg bg-white/95 backdrop-blur-md border border-teal-200 text-teal-900 shadow-md shadow-teal-600/10 flex items-center gap-1.5 z-40 whitespace-nowrap pointer-events-none"
                       >
-                        <Check className="w-3 text-teal-600" />
+                        <Check className="w-3 h-3 text-teal-600" />
                         <span className="text-[11px] font-mono font-bold tracking-tight">Copied!</span>
                         <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-white rotate-45 border-r border-b border-teal-200" />
                       </motion.div>
@@ -1019,59 +1300,6 @@ export default function Home() {
         </footer>
 
       </main>
-
-      {/* FULLSCREEN ISOLATED LIGHTBOX MODAL */}
-      <AnimatePresence>
-        {lightboxCert && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setLightboxCert(null)}
-            className="fixed inset-0 bg-slate-900/50 backdrop-blur-2xl z-[99999] flex items-center justify-center p-3 sm:p-6 md:p-8 cursor-zoom-out"
-          >
-            <motion.div 
-              initial={{ scale: 0.94, opacity: 0, y: 15 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.94, opacity: 0, y: 15 }}
-              transition={{ type: "spring", stiffness: 300, damping: 25 }}
-              onClick={(e) => e.stopPropagation()}
-              className="relative max-w-4xl w-full flex flex-col items-center gap-2.5 sm:gap-3 cursor-default"
-            >
-              {/* Frosted Glass Header Pill */}
-              <div className="w-full flex justify-between items-center px-4 py-2.5 rounded-2xl bg-white/95 backdrop-blur-xl border border-white/60 shadow-xl text-slate-800">
-                <div className="flex items-center gap-2 truncate">
-                  <span className="px-2.5 py-0.5 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-[10px] font-mono font-semibold">
-                    {lightboxCert.badge}
-                  </span>
-                  <span className="text-xs sm:text-sm font-bold truncate text-slate-900">{lightboxCert.title}</span>
-                  <span className="text-xs text-slate-500 hidden sm:inline">• {lightboxCert.issuer}</span>
-                </div>
-
-                {/* Close Button */}
-                <motion.button 
-                  whileHover={{ scale: 1.1, rotate: 90 }}
-                  whileTap={{ scale: 0.9 }}
-                  onClick={() => setLightboxCert(null)}
-                  className="p-1.5 rounded-full bg-slate-100 hover:bg-teal-600 hover:text-white text-slate-600 transition-colors shadow-sm flex items-center justify-center flex-shrink-0 ml-2"
-                  aria-label="Close certificate preview"
-                >
-                  <X className="w-4 h-4" />
-                </motion.button>
-              </div>
-
-              {/* Clean Certificate Image Viewport */}
-              <div className="relative w-full rounded-2xl overflow-hidden bg-transparent shadow-2xl flex items-center justify-center">
-                <img 
-                  src={lightboxCert.img} 
-                  alt={`${lightboxCert.title} Certificate`} 
-                  className="w-auto max-h-[75vh] sm:max-h-[80vh] object-contain rounded-2xl shadow-2xl" 
-                />
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
     </div>
   );
