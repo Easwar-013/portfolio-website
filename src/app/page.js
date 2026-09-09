@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { motion, useScroll, useTransform, useSpring, useMotionValue, useVelocity, AnimatePresence } from 'motion/react';
+import { motion, useScroll, useTransform, useSpring, useMotionValue, AnimatePresence } from 'motion/react';
 import { Mail, ExternalLink, Code2, Database, Layout, Wrench, ArrowUpRight, Sparkles, Move, Hospital, ShoppingBag, Coffee, CheckCircle, AlertCircle, Loader2, FileText, Menu, X, Globe, Eye, Award, Cpu, Smartphone, ChevronLeft, ChevronRight, Check, Copy } from 'lucide-react';
 
 const WEB3FORMS_ACCESS_KEY = process.env.NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY;
@@ -55,7 +55,7 @@ function TypingAnimation({
   );
 }
 
-// Skiper-106 Smooth Spring Caret Input with Active Click & Selection Tracking
+// Universal Smooth Spring Caret Input (Used across Name, Email, and Message fields)
 function SmoothCaretInput({
   name,
   type = "text",
@@ -66,7 +66,8 @@ function SmoothCaretInput({
   className = "",
   focused,
   onFocus,
-  onBlur
+  onBlur,
+  isMessage = false
 }) {
   const caretX = useMotionValue(0);
   const caretOpacity = useMotionValue(0);
@@ -74,7 +75,7 @@ function SmoothCaretInput({
   const measureRef = useRef(null);
 
   const springCaretX = useSpring(caretX, {
-    stiffness: 500,
+    stiffness: 550,
     damping: 32,
     mass: 0.45,
   });
@@ -102,8 +103,17 @@ function SmoothCaretInput({
 
   const updateCaret = useCallback((target) => {
     if (!target) return;
-    const selectionStart = target.selectionStart ?? 0;
-    const selectionEnd = target.selectionEnd ?? 0;
+    let selectionStart = 0;
+    let selectionEnd = 0;
+
+    try {
+      selectionStart = target.selectionStart ?? target.value.length;
+      selectionEnd = target.selectionEnd ?? target.value.length;
+    } catch {
+      selectionStart = target.value.length;
+      selectionEnd = target.value.length;
+    }
+
     const textBeforeCaret = target.value.slice(0, selectionStart);
     const absoluteWidth = measurePrefixWidth(textBeforeCaret);
     if (absoluteWidth === null) return;
@@ -116,28 +126,21 @@ function SmoothCaretInput({
     const maxX = target.clientWidth - paddingRight;
 
     caretX.set(Math.min(Math.max(caretPosition, minX), maxX));
-    if (selectionStart !== selectionEnd) {
-      caretOpacity.set(0);
-    } else {
-      caretOpacity.set(1);
-    }
+    caretOpacity.set(selectionStart !== selectionEnd ? 0 : 1);
   }, [caretX, caretOpacity]);
 
-  // Sync cursor on external value change
   useEffect(() => {
     if (inputRef.current && document.activeElement === inputRef.current) {
       updateCaret(inputRef.current);
     }
   }, [value, updateCaret]);
 
-  // Global document selection listener ensuring clicks inside existing text update the spring caret immediately
   useEffect(() => {
     const handleSelectionChange = () => {
       if (inputRef.current && document.activeElement === inputRef.current) {
         requestAnimationFrame(() => updateCaret(inputRef.current));
       }
     };
-
     document.addEventListener("selectionchange", handleSelectionChange);
     return () => document.removeEventListener("selectionchange", handleSelectionChange);
   }, [updateCaret]);
@@ -150,7 +153,8 @@ function SmoothCaretInput({
     } ${className}`}>
       <input
         ref={inputRef}
-        type={type}
+        type={type === 'email' ? 'text' : type}
+        inputMode={type === 'email' ? 'email' : undefined}
         name={name}
         required={required}
         value={value}
@@ -159,33 +163,27 @@ function SmoothCaretInput({
           onChange(e);
           requestAnimationFrame(() => updateCaret(e.target));
         }}
-        onClick={(e) => {
-          requestAnimationFrame(() => updateCaret(e.target));
-        }}
-        onKeyUp={(e) => {
-          requestAnimationFrame(() => updateCaret(e.target));
-        }}
-        onSelect={(e) => {
-          requestAnimationFrame(() => updateCaret(e.target));
-        }}
+        onClick={(e) => requestAnimationFrame(() => updateCaret(e.target))}
+        onKeyUp={(e) => requestAnimationFrame(() => updateCaret(e.target))}
+        onSelect={(e) => requestAnimationFrame(() => updateCaret(e.target))}
         onFocus={(e) => {
           onFocus?.();
           requestAnimationFrame(() => updateCaret(e.target));
           caretOpacity.set(1);
         }}
-        onBlur={(e) => {
+        onBlur={() => {
           onBlur?.();
           caretOpacity.set(0);
         }}
-        className="w-full px-4 py-3 rounded-xl bg-transparent text-slate-800 placeholder-slate-400 text-xs sm:text-sm outline-none caret-transparent"
+        className={`w-full px-4 rounded-xl bg-transparent text-slate-800 placeholder-slate-400 text-xs sm:text-sm outline-none caret-transparent ${
+          isMessage ? 'py-4 sm:py-5' : 'py-3'
+        }`}
       />
-      {/* Invisible Measurement Span */}
       <span
         ref={measureRef}
         aria-hidden
         className="pointer-events-none invisible absolute top-0 left-0 whitespace-pre"
       />
-      {/* Spring Animated Smooth Caret */}
       <motion.div
         className="pointer-events-none absolute h-[1.1em] w-[2px] bg-teal-600 rounded-full"
         style={{ x: springCaretX, opacity: caretOpacity }}
@@ -206,7 +204,6 @@ const LinkedinIcon = ({ className = "w-5 h-5" }) => (
   </svg>
 );
 
-// 3D Magnetic Interactive Card
 function TiltCard({ children, className }) {
   const cardRef = useRef(null);
   const x = useMotionValue(0);
@@ -242,7 +239,6 @@ function TiltCard({ children, className }) {
   );
 }
 
-// Progressive Parallax and Scroll Velocity Tilt
 function ScrollMorphCard({ children, index = 0 }) {
   const ref = useRef(null);
   const { scrollYProgress } = useScroll({
@@ -271,32 +267,25 @@ export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Active section spy for navbar
   const [activeSection, setActiveSection] = useState("about");
 
-  // Certificate Slideshow & Modal State
   const [certIndex, setCertIndex] = useState(0);
   const [direction, setDirection] = useState(1);
   const [lightboxCert, setLightboxCert] = useState(null);
 
-  // Role options for MagicUI Typing Animation
   const typingRoles = ["Web Developer", "Full-Stack Engineer", "MERN Stack Specialist", "Next.js Architect"];
 
-  // Copy Email State
   const [copiedEmail, setCopiedEmail] = useState(false);
 
-  // Form State & Dynamic Interactive Focus
   const [formData, setFormData] = useState({ name: '', email: '', message: '' });
   const [formStatus, setFormStatus] = useState('idle');
   const [focusedInput, setFocusedInput] = useState(null);
 
-  // Scroll Progress & Smoothing
   const { scrollYProgress } = useScroll();
   const smoothProgress = useSpring(scrollYProgress, { stiffness: 100, damping: 20 });
   const scaleX = useSpring(scrollYProgress, { stiffness: 120, damping: 24 });
   const heroY = useTransform(smoothProgress, [0, 0.4], [0, -30]);
 
-  // Mouse Follower
   const mouseX = useMotionValue(-100);
   const mouseY = useMotionValue(-100);
   const smoothMouseX = useSpring(mouseX, { stiffness: 140, damping: 18 });
@@ -311,7 +300,6 @@ export default function Home() {
     return () => window.removeEventListener("mousemove", handleMouseMove);
   }, [mouseX, mouseY]);
 
-  // ScrollSpy Listener
   useEffect(() => {
     const handleScroll = () => {
       const sections = ["about", "offerings", "work", "certificates", "techstack", "contact"];
@@ -335,7 +323,6 @@ export default function Home() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Smooth Scroll Navigation Handler
   const handleNavClick = (e, targetId) => {
     e.preventDefault();
     setMobileMenuOpen(false);
@@ -348,7 +335,6 @@ export default function Home() {
     }, 100);
   };
 
-  // Prevent background scroll and listen for ESC key
   useEffect(() => {
     if (lightboxCert) {
       document.body.style.overflow = 'hidden';
@@ -519,7 +505,6 @@ export default function Home() {
     }
   ];
 
-  // Auto-play slideshow timer for certificates
   useEffect(() => {
     const timer = setInterval(() => {
       nextCert();
@@ -710,7 +695,6 @@ export default function Home() {
                 Hi, I'm Easwar R
               </motion.h1>
 
-              {/* MagicUI Typing Animation Wrapper */}
               <div className="min-h-[44px] sm:min-h-[64px] md:min-h-[80px] flex items-center">
                 <TypingAnimation
                   words={typingRoles}
@@ -747,7 +731,6 @@ export default function Home() {
                 View Selected Work <ArrowUpRight className="w-4 h-4" />
               </motion.a>
 
-              {/* View Resume Button */}
               <motion.a 
                 whileHover={{ scale: 1.03, y: -2 }}
                 whileTap={{ scale: 0.97 }}
@@ -935,7 +918,6 @@ export default function Home() {
               <h2 className="text-2xl sm:text-4xl md:text-5xl font-black tracking-tight text-slate-900">Certifications</h2>
             </div>
 
-            {/* Controls */}
             <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto">
               <span className="text-xs font-mono text-slate-500">
                 {certIndex + 1} / {certificates.length}
@@ -959,7 +941,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Swipeable Slideshow */}
           <div className="relative max-w-4xl mx-auto min-h-[340px] sm:min-h-[320px] flex items-center justify-center overflow-hidden">
             <AnimatePresence custom={direction} mode="wait">
               <motion.div
@@ -983,8 +964,6 @@ export default function Home() {
                 className="w-full cursor-grab active:cursor-grabbing"
               >
                 <TiltCard className="p-4 sm:p-8 bg-white rounded-3xl border border-slate-200/90 shadow-md sm:shadow-lg hover:border-teal-300 transition-all flex flex-col md:flex-row justify-between items-stretch gap-4 sm:gap-6 relative overflow-hidden group">
-                  
-                  {/* Left Details */}
                   <div className="space-y-3 sm:space-y-4 max-w-md flex flex-col justify-between z-10">
                     <div className="space-y-2 sm:space-y-3">
                       <div className="flex items-center gap-2 sm:gap-2.5">
@@ -1012,7 +991,6 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* Right Image Frame */}
                   <div 
                     onClick={() => setLightboxCert(currentCert)}
                     className="w-full md:w-[380px] aspect-[1.41/1] bg-slate-100 rounded-2xl border border-slate-200 overflow-hidden shadow-inner relative group-hover:border-teal-300 transition-colors flex items-center justify-center cursor-pointer"
@@ -1035,7 +1013,6 @@ export default function Home() {
             </AnimatePresence>
           </div>
 
-          {/* Indicator Navigation Dots */}
           <div className="flex justify-center items-center gap-2 pt-1">
             {certificates.map((_, idx) => (
               <button
@@ -1071,7 +1048,6 @@ export default function Home() {
                 onClick={(e) => e.stopPropagation()}
                 className="relative max-w-4xl w-full flex flex-col items-center gap-2.5 sm:gap-3 cursor-default"
               >
-                {/* Header Pill */}
                 <div className="w-full flex justify-between items-center px-4 py-2.5 rounded-2xl bg-white/95 backdrop-blur-xl border border-white/60 shadow-xl text-slate-800">
                   <div className="flex items-center gap-2 truncate">
                     <span className="px-2.5 py-0.5 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-[10px] font-mono font-semibold">
@@ -1092,7 +1068,6 @@ export default function Home() {
                   </motion.button>
                 </div>
 
-                {/* Image Viewport */}
                 <div className="relative w-full rounded-2xl overflow-hidden shadow-2xl flex items-center justify-center">
                   <img 
                     src={lightboxCert.img} 
@@ -1136,7 +1111,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* CONTACT FORM with Skiper-106 Smooth Spring Caret Inputs */}
+        {/* CONTACT FORM with Smooth Spring Caret Across All Fields */}
         <section id="contact" className="scroll-mt-24 space-y-6 sm:space-y-8 pt-6 sm:pt-8 border-t border-slate-200">
           <motion.div 
             initial={{ opacity: 0, y: 25 }}
@@ -1180,7 +1155,7 @@ export default function Home() {
                 )}
 
                 <div className="grid sm:grid-cols-2 gap-3 sm:gap-4">
-                  {/* Skiper-106 Smooth Spring Caret: Name */}
+                  {/* Name Input */}
                   <SmoothCaretInput
                     type="text"
                     name="name"
@@ -1193,7 +1168,7 @@ export default function Home() {
                     placeholder="Your Name"
                   />
 
-                  {/* Skiper-106 Smooth Spring Caret: Email */}
+                  {/* Email Input */}
                   <SmoothCaretInput
                     type="email"
                     name="email"
@@ -1207,27 +1182,19 @@ export default function Home() {
                   />
                 </div>
 
-                {/* Animated Textarea */}
-                <motion.div 
-                  animate={{ scale: focusedInput === 'message' ? 1.01 : 1 }}
-                  className={`relative rounded-xl border transition-all duration-300 ${
-                    focusedInput === 'message' 
-                      ? 'border-teal-500 shadow-sm shadow-teal-500/10 ring-2 ring-teal-500/20 bg-white' 
-                      : 'border-slate-200 bg-slate-50'
-                  }`}
-                >
-                  <textarea 
-                    name="message"
-                    required
-                    rows="4" 
-                    value={formData.message}
-                    onFocus={() => setFocusedInput('message')}
-                    onBlur={() => setFocusedInput(null)}
-                    onChange={handleInputChange}
-                    placeholder="Tell me about your project or opportunity..." 
-                    className="w-full px-4 py-3 rounded-xl bg-transparent text-slate-800 placeholder-slate-400 text-xs sm:text-sm focus:outline-none resize-none"
-                  />
-                </motion.div>
+                {/* Message Input with the exact same Smooth Spring Caret physics */}
+                <SmoothCaretInput
+                  type="text"
+                  name="message"
+                  required
+                  isMessage={true}
+                  value={formData.message}
+                  focused={focusedInput === 'message'}
+                  onFocus={() => setFocusedInput('message')}
+                  onBlur={() => setFocusedInput(null)}
+                  onChange={handleInputChange}
+                  placeholder="Tell me about your project or opportunity..."
+                />
 
                 <motion.button 
                   whileHover={{ scale: 1.01 }}
